@@ -25,13 +25,31 @@ const formatDate = (date) => new Intl.DateTimeFormat('vi-VN', {
 const main = document.querySelector('main');
 const home = document.createElement('div');
 while (main.firstChild) home.append(main.firstChild);
-home.querySelector('.post-grid').innerHTML = posts.map((post) => `
+const grid = home.querySelector('.post-grid');
+const search = document.createElement('div');
+search.className = 'post-search';
+search.innerHTML = `<label for="post-search">Tìm bài viết</label><input id="post-search" type="search" placeholder="Nhập tiêu đề hoặc mô tả…" autocomplete="off" aria-controls="post-list"><p class="search-status" role="status" aria-live="polite" aria-atomic="true"></p>`;
+grid.id = 'post-list';
+grid.before(search);
+const searchInput = search.querySelector('input');
+const searchStatus = search.querySelector('.search-status');
+const normalizeSearch = (value) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').toLowerCase().trim().replace(/\s+/g, ' ');
+
+function filterPosts() {
+  const query = normalizeSearch(searchInput.value);
+  const matches = posts.filter((post) => normalizeSearch(`${post.title} ${post.excerpt}`).includes(query));
+  grid.innerHTML = matches.map((post) => `
   <article class="post-card">
     <div class="post-top"><span class="tag">Học AI</span><time datetime="${post.date}">${formatDate(post.date)}</time></div>
     <h3><a href="#/bai/${encodeURIComponent(post.slug)}">${escapeHtml(post.title)}</a></h3>
     <p>${escapeHtml(post.excerpt)}</p>
     <a class="post-bottom" href="#/bai/${encodeURIComponent(post.slug)}" aria-label="Đọc bài: ${escapeHtml(post.title)}">Đọc bài viết <span aria-hidden="true">→</span></a>
   </article>`).join('');
+  searchStatus.textContent = matches.length === 0 ? 'Chưa có bài phù hợp' : query ? `${matches.length} bài viết phù hợp` : '';
+}
+
+searchInput.addEventListener('input', filterPosts);
+filterPosts();
 
 function render() {
   const hash = window.location.hash;
